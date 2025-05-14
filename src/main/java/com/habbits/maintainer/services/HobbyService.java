@@ -1,0 +1,39 @@
+package com.habbits.maintainer.services;
+
+import com.habbits.maintainer.models.entities.Hobbys;
+import com.habbits.maintainer.repository.HobbyRepository;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class HobbyService {
+    @Autowired
+    private HobbyRepository repository;
+
+    public void create(Hobbys hobby) {
+        repository.save(hobby);
+    }
+
+    public List<Hobbys> getAll() {
+        return repository.findAll();
+    }
+
+    public Hobbys findById(ObjectId id) {
+        return repository.findById(id).orElse(null);
+    }
+
+    public void replace(ObjectId id, Hobbys newHobby) {
+        Hobbys old = this.findById(id);
+        if(old != null) {
+            repository.delete(old);
+            repository.save(newHobby);
+        }
+    }
+
+    public void delete(ObjectId id) {
+        repository.deleteById(id);
+    }
+}
