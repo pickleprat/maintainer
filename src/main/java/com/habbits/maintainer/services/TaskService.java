@@ -1,6 +1,8 @@
 package com.habbits.maintainer.services;
 
+import com.habbits.maintainer.models.entities.Task;
 import com.habbits.maintainer.models.entities.User;
+import com.habbits.maintainer.repository.TaskRepository;
 import com.habbits.maintainer.repository.UserRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,26 +11,26 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserService {
-    @Autowired private UserRepository repository;
+public class TaskService {
+    @Autowired private TaskRepository repository;
 
-    public void create(User user) {
-        repository.save(user);
+    public void create(Task task) {
+        repository.save(task);
     }
 
-    public List<User> getAll() {
+    public List<Task> getAll() {
         return repository.findAll();
     }
 
-    public User findById(ObjectId id) {
+    public Task findById(ObjectId id) {
         return repository.findById(id).orElse(null);
     }
 
-    public void replace(ObjectId id, User user) {
-        User old = this.findById(id);
+    public void replace(ObjectId id, Task task) {
+        Task old = this.findById(id);
         if(old != null) {
             repository.delete(old);
-            repository.save(user);
+            repository.save(task);
         }
     }
 
