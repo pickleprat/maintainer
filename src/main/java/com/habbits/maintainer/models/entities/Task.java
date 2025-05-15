@@ -15,7 +15,7 @@ public class Task {
     @Indexed(unique = true) @NonNull private String taskName;
     @NonNull private String description;
     @NonNull private Period duration;
-    @NonNull private int repetition;
+    private int repetition;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
 }

@@ -33,7 +33,7 @@ public class TaskController {
         return exists;
     }
 
-    @GetMapping("/create")
+    @PostMapping("/create")
     public ResponseEntity<Boolean> create(@RequestBody Task task) {
         boolean exists = this.taskExists(task);
         task.setTaskName(task.getTaskName().toLowerCase().strip());
@@ -81,7 +81,7 @@ public class TaskController {
     }
 
     @PutMapping("/update/id/{id}")
-    public ResponseEntity<Void> update(@PathVariable ObjectId id, Task task) {
+    public ResponseEntity<Void> update(@PathVariable ObjectId id, @RequestBody Task task) {
         Task old = service.findById(id);
         if(old != null && old.getTaskName().toLowerCase().strip()
                 .equals(task.getTaskName().toLowerCase().strip())) {
@@ -100,7 +100,7 @@ public class TaskController {
 
 
     @PutMapping("/update/taskName/{taskName}")
-    public ResponseEntity<Void> update(@PathVariable String taskName, Task task) {
+    public ResponseEntity<Void> update(@PathVariable String taskName, @RequestBody Task task) {
         List<Task> tasks = service.getAll();
         if(tasks != null && !tasks.isEmpty()) {
             for(Task exTask: tasks) {
