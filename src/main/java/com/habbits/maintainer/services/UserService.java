@@ -1,7 +1,8 @@
 package com.habbits.maintainer.services;
 
 import com.habbits.maintainer.models.entities.Hobby;
-import com.habbits.maintainer.repository.HobbyRepository;
+import com.habbits.maintainer.models.entities.User;
+import com.habbits.maintainer.repository.UserRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,26 +10,26 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class HobbyService {
-    @Autowired private HobbyRepository repository;
+public class UserService {
+    @Autowired private UserRepository repository;
 
-    public void create(Hobby hobby) {
-        repository.save(hobby);
+    public void create(User user) {
+        repository.save(user);
     }
 
-    public List<Hobby> getAll() {
+    public List<User> getAll() {
         return repository.findAll();
     }
 
-    public Hobby findById(ObjectId id) {
+    public User findById(ObjectId id) {
         return repository.findById(id).orElse(null);
     }
 
-    public void replace(ObjectId id, Hobby newHobby) {
-        Hobby old = this.findById(id);
+    public void replace(ObjectId id, User user) {
+        User old = this.findById(id);
         if(old != null) {
             repository.delete(old);
-            repository.save(newHobby);
+            repository.save(user);
         }
     }
 
