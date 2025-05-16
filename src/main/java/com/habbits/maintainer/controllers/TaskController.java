@@ -1,16 +1,16 @@
 package com.habbits.maintainer.controllers;
 
+import com.habbits.maintainer.models.entities.Goal;
 import com.habbits.maintainer.models.entities.Period;
 import com.habbits.maintainer.models.entities.Task;
+import com.habbits.maintainer.services.GoalService;
 import com.habbits.maintainer.services.TaskService;
-import org.apache.coyote.Response;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,10 +18,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
-    @Autowired private TaskService service;
+    @Autowired private TaskService taskService;
+    @Autowired private GoalService goalService;
 
     private boolean taskExists(Task task) {
-        List<Task> taskList = service.getAll();
+        List<Task> taskList = taskService.getAll();
         boolean exists = false;
         for(Task existingTask: taskList) {
             if(existingTask.getTaskName().toLowerCase().strip()
@@ -33,14 +34,16 @@ public class TaskController {
         return exists;
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<Boolean> create(@RequestBody Task task) {
+    @PostMapping("/create/{goalId}")
+    public ResponseEntity<Boolean> create(@PathVariable ObjectId goalId, @RequestBody Task task) {
         boolean exists = this.taskExists(task);
         task.setTaskName(task.getTaskName().toLowerCase().strip());
-        if(!exists) {
+        Goal goal = goalService.findById(goalId);
+        if(!exists && goal != null) {
             task.setCreated_at(LocalDateTime.now());
             task.setUpdated_at(null);
-            service.create(task);
+            task.setGoal(goal);
+            taskService.create(task);
             return new ResponseEntity<>(true, HttpStatus.CREATED);
         }
 
@@ -52,7 +55,7 @@ public class TaskController {
 
     @GetMapping("/view")
     public ResponseEntity<List<Task>> view() {
-        List<Task> users = service.getAll();
+        List<Task> users = taskService.getAll();
         if(users != null && !users.isEmpty()){
             return ResponseEntity.status(HttpStatus.OK).body(users);
         }
@@ -61,7 +64,7 @@ public class TaskController {
 
     @GetMapping("/filter/duration/{duration}")
     public ResponseEntity<List<Task>> filter(@PathVariable Period duration) {
-        List<Task> tasks = service.getAll();
+        List<Task> tasks = taskService.getAll();
         if(tasks != null && !tasks.isEmpty()) {
             tasks.removeIf(tk -> tk.getDuration() != duration);
             return new ResponseEntity<>(tasks, HttpStatus.OK);
@@ -71,7 +74,7 @@ public class TaskController {
 
     @GetMapping("/filter/taskName/{taskName}")
     public ResponseEntity<List<Task>> filter(@PathVariable String taskName) {
-        List<Task> tasks = service.getAll();
+        List<Task> tasks = taskService.getAll();
         if(tasks != null && !tasks.isEmpty()) {
             tasks.removeIf(tk -> !tk.getTaskName().toLowerCase().strip()
                         .equals(taskName.toLowerCase().strip()));
@@ -82,14 +85,14 @@ public class TaskController {
 
     @PutMapping("/update/id/{id}")
     public ResponseEntity<Void> update(@PathVariable ObjectId id, @RequestBody Task task) {
-        Task old = service.findById(id);
+        Task old = taskService.findById(id);
         if(old != null && old.getTaskName().toLowerCase().strip()
                 .equals(task.getTaskName().toLowerCase().strip())) {
             old.setDescription(task.getDescription());
             old.setUpdated_at(LocalDateTime.now());
             old.setDuration(task.getDuration());
             old.setRepetition(task.getRepetition());
-            service.replace(old.getId(), old);
+            taskService.replace(old.getId(), old);
             return new ResponseEntity<>(HttpStatus.OK);
         } else if(old == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -101,7 +104,7 @@ public class TaskController {
 
     @PutMapping("/update/taskName/{taskName}")
     public ResponseEntity<Void> update(@PathVariable String taskName, @RequestBody Task task) {
-        List<Task> tasks = service.getAll();
+        List<Task> tasks = taskService.getAll();
         if(tasks != null && !tasks.isEmpty()) {
             for(Task exTask: tasks) {
                 if(exTask.getTaskName().toLowerCase().strip()
@@ -110,7 +113,7 @@ public class TaskController {
                     exTask.setUpdated_at(LocalDateTime.now());
                     exTask.setDuration(task.getDuration());
                     exTask.setRepetition(task.getRepetition());
-                    service.replace(exTask.getId(), exTask);
+                    taskService.replace(exTask.getId(), exTask);
                     return new ResponseEntity<>(HttpStatus.OK);
                 }
             }
@@ -121,9 +124,9 @@ public class TaskController {
 
     @DeleteMapping("/delete/id/{id}")
     public ResponseEntity<Boolean> delete(@PathVariable ObjectId id) {
-        Task task = service.findById(id);
+        Task task = taskService.findById(id);
         if(task != null) {
-            service.delete(id);
+            taskService.delete(id);
             return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
         }
 
@@ -132,12 +135,12 @@ public class TaskController {
 
     @DeleteMapping("/delete/taskName/{taskName}")
     public ResponseEntity<Boolean> delete(@PathVariable String taskName) {
-        List<Task> tasks = service.getAll();
+        List<Task> tasks = taskService.getAll();
         if(tasks != null && !tasks.isEmpty()) {
             for(Task tsk : tasks) {
                 if(tsk.getTaskName().toLowerCase().strip()
                         .equals(taskName.toLowerCase().strip())) {
-                    service.delete(tsk.getId());
+                    taskService.delete(tsk.getId());
                     return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
                 }
             }

@@ -1,6 +1,8 @@
 package com.habbits.maintainer.controllers;
 
+import com.habbits.maintainer.models.entities.Goal;
 import com.habbits.maintainer.models.entities.Hobby;
+import com.habbits.maintainer.services.GoalService;
 import com.habbits.maintainer.services.HobbyService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +16,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/hobby")
 public class HobbyController {
-    @Autowired
-    private HobbyService service;
+    @Autowired private HobbyService hobbbyService;
+    @Autowired private GoalService goalService;
 
     private boolean hobbyExists(Hobby hobby) {
-        List<Hobby> hobbyList = service.getAll();
+        List<Hobby> hobbyList = hobbbyService.getAll();
         boolean exists = false;
         for(Hobby existingHobby: hobbyList) {
             if(existingHobby.getTitle().toLowerCase().strip()
@@ -41,7 +43,7 @@ public class HobbyController {
         if(!exists) {
             hobby.setCreated_at(LocalDateTime.now());
             hobby.setUpdated_at(null);
-            service.create(hobby);
+            hobbbyService.create(hobby);
             return new ResponseEntity<>(true, HttpStatus.CREATED);
         }
 
@@ -55,7 +57,7 @@ public class HobbyController {
     // 404 Not Found : If hobbies are non-existent
     @GetMapping("/view")
     public ResponseEntity<List<Hobby>> viewHobbies() {
-        List<Hobby> all = service.getAll();
+        List<Hobby> all = hobbbyService.getAll();
         if(all != null && !all.isEmpty()) {
             return new ResponseEntity<>(all, HttpStatus.OK) ;
         }
@@ -68,11 +70,11 @@ public class HobbyController {
     // 403 Forbidden  : The update you tried to make to the resource is not allowed.
     @PutMapping("/update/id/{id}")
     public ResponseEntity<Void> update(@PathVariable ObjectId id, @RequestBody Hobby newHobby) {
-        Hobby prev = service.findById(id);
+        Hobby prev = hobbbyService.findById(id);
         if(prev != null && prev.getTitle().equals(newHobby.getTitle().toLowerCase().strip())) {
             prev.setDescription(newHobby.getDescription().toLowerCase().strip());
             prev.setUpdated_at(LocalDateTime.now());
-            service.replace(prev.getId(), prev);
+            hobbbyService.replace(prev.getId(), prev);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else if(prev == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -85,14 +87,14 @@ public class HobbyController {
     // 404 Not found : the resource you tried to delete does not exist.
     @PutMapping("/update/title/{title}")
     public ResponseEntity<Void> update(@PathVariable String title, @RequestBody Hobby newHobby) {
-        List<Hobby> hobbies = service.getAll();
+        List<Hobby> hobbies = hobbbyService.getAll();
         for(Hobby hb : hobbies) {
             if(hb.getTitle().toLowerCase().strip()
                     .equals(title.toLowerCase().strip())) {
 
                 hb.setDescription(newHobby.getDescription().toLowerCase().strip());
                 hb.setUpdated_at(LocalDateTime.now());
-                service.replace(hb.getId(), hb);
+                hobbbyService.replace(hb.getId(), hb);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
         }
@@ -103,9 +105,12 @@ public class HobbyController {
     // 404 Not found : the resource you tried to delete does not exist.
     @DeleteMapping("/delete/id/{id}")
     public ResponseEntity<Boolean> delete(@PathVariable ObjectId id) {
-        Hobby hb = service.findById(id);
+        Hobby hb = hobbbyService.findById(id);
+        List<Goal> goals = goalService.getAll();
         if(hb != null) {
-            service.delete(id);
+            hobbbyService.delete(id);
+            goals.removeIf(gl -> gl.getHobby().equals(hb));
+            goalService.deleteMany(goals);
             return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
@@ -115,14 +120,16 @@ public class HobbyController {
     // 404 Not found : the resource you tried to delete does not exist.
     @DeleteMapping("/delete/title/{title}")
     public ResponseEntity<Boolean> delete(@PathVariable String title) {
-        List<Hobby> allHobbies = service.getAll();
+        List<Hobby> allHobbies = hobbbyService.getAll();
+        List<Goal> goals = goalService.getAll();
         for(Hobby hb : allHobbies) {
             if(hb.getTitle().toLowerCase().strip().equals(title.strip().toLowerCase())){
-                service.delete(hb.getId());
+                hobbbyService.delete(hb.getId());
+                goals.removeIf(gl -> gl.getHobby().equals(hb));
+                goalService.deleteMany(goals);
                 return new ResponseEntity<>(true, HttpStatus.NO_CONTENT);
             }
         }
-
         return new ResponseEntity<>(false, HttpStatus.NOT_FOUND);
     }
 
@@ -130,11 +137,10 @@ public class HobbyController {
     // 404 Not Found: the filter rows do not exist
     @GetMapping("/filter/{category}")
     public ResponseEntity<List<Hobby>> getHobbyByCategory(@PathVariable String category) {
-        List<Hobby> allHobbies = service.getAll();
+        List<Hobby> allHobbies = hobbbyService.getAll();
         if(allHobbies == null || allHobbies.isEmpty()) {
             return new ResponseEntity<>(allHobbies, HttpStatus.NOT_FOUND);
         }
-
         allHobbies.removeIf(hb ->
                 !hb.getCategory().toLowerCase().strip()
                         .equals(category.toLowerCase().strip()));
@@ -142,7 +148,6 @@ public class HobbyController {
         if (allHobbies.isEmpty()) {
             return new ResponseEntity<>(allHobbies, HttpStatus.NOT_FOUND);
         }
-
         return new ResponseEntity<>(allHobbies, HttpStatus.OK);
     }
 }

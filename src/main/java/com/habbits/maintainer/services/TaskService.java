@@ -1,9 +1,7 @@
 package com.habbits.maintainer.services;
 
 import com.habbits.maintainer.models.entities.Task;
-import com.habbits.maintainer.models.entities.User;
 import com.habbits.maintainer.repository.TaskRepository;
-import com.habbits.maintainer.repository.UserRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,8 @@
 package com.habbits.maintainer.controllers;
 
+import com.habbits.maintainer.models.entities.Goal;
 import com.habbits.maintainer.models.entities.User;
+import com.habbits.maintainer.services.GoalService;
 import com.habbits.maintainer.services.UserService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +16,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-    @Autowired private UserService service;
+    @Autowired private UserService userService;
+    @Autowired private GoalService goalService;
 
     public boolean userNameExists(String userName) {
-        List<User> users = service.getAll();
+        List<User> users = userService.getAll();
         if(users != null && !users.isEmpty()) {
             for(User existingUser: users) {
                 if(existingUser.getUserName().strip().toLowerCase()
@@ -35,7 +38,7 @@ public class UserController {
         user.setUpdated_at(null);
         boolean exists = userNameExists(user.getUserName());
         if(!exists) {
-            service.create(user);
+            userService.create(user);
             return new ResponseEntity<>(true, HttpStatus.CREATED);
         }
         return new ResponseEntity<>(false, HttpStatus.CONFLICT);
@@ -43,7 +46,7 @@ public class UserController {
 
     @GetMapping("/view")
     public ResponseEntity<List<User>> view() {
-        List<User> users = service.getAll();
+        List<User> users = userService.getAll();
         if(users != null && !users.isEmpty()){
             return ResponseEntity.status(HttpStatus.OK).body(users);
         }
@@ -52,7 +55,7 @@ public class UserController {
 
     @GetMapping("/filter/id/{id}")
     public ResponseEntity<User> filter(@PathVariable ObjectId id) {
-        User user = service.findById(id);
+        User user = userService.findById(id);
         if(user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         }
@@ -61,7 +64,7 @@ public class UserController {
 
     @GetMapping("/filter/userName/{userName}")
     public ResponseEntity<User> filter(@PathVariable String userName) {
-        List<User> users = service.getAll();
+        List<User> users = userService.getAll();
         for(User user : users) {
             if(user.getUserName().equals(userName)) {
                 return new ResponseEntity<>(user, HttpStatus.OK);
@@ -72,7 +75,7 @@ public class UserController {
 
     @PutMapping("/update/id/{id}")
     public ResponseEntity<Void> editById(@PathVariable ObjectId id, @RequestBody User user) {
-        User old = service.findById(id);
+        User old = userService.findById(id);
         if(old != null && user.getUserName().equals(old.getUserName())) {
             old.setPassword(user.getPassword());
             old.setAddress(user.getAddress());
@@ -84,7 +87,7 @@ public class UserController {
             old.setLastName(user.getLastName());
             old.setCountryCode(user.getCountryCode());
             old.setPhoneNumber(user.getPhoneNumber());
-            service.replace(id, old);
+            userService.replace(id, old);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else if(old == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -95,7 +98,7 @@ public class UserController {
 
     @PutMapping("/update/userName/{userName}")
     public ResponseEntity<Void> editById(@PathVariable String userName, @RequestBody User user) {
-        List<User> users = service.getAll();
+        List<User> users = userService.getAll();
         for(User old: users) {
             if(old.getUserName().equals(userName)) {
                 old.setPassword(user.getPassword());
@@ -108,7 +111,7 @@ public class UserController {
                 old.setLastName(user.getLastName());
                 old.setCountryCode(user.getCountryCode());
                 old.setPhoneNumber(user.getPhoneNumber());
-                service.replace(old.getId(), old);
+                userService.replace(old.getId(), old);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
         }
@@ -117,9 +120,12 @@ public class UserController {
 
     @DeleteMapping("/delete/id/{id}")
     public ResponseEntity<Void> delete(@PathVariable ObjectId id) {
-       User user = service.findById(id);
+       User user = userService.findById(id);
+       List<Goal> goals = goalService.getAll();
        if(user != null) {
-           service.delete(id);
+           userService.delete(id);
+           goals.removeIf(gl -> gl.getUser().equals(user));
+           goalService.deleteMany(goals);
            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
        }
        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -127,10 +133,13 @@ public class UserController {
 
     @DeleteMapping("/delete/userName/{userName}")
     public ResponseEntity<Void> delete(@PathVariable String userName) {
-        List<User> users = service.getAll();
+        List<User> users = userService.getAll();
+        List<Goal> goals = goalService.getAll();
         for(User user: users) {
             if(user.getUserName().equals(userName)) {
-                service.delete(user.getId());
+                userService.delete(user.getId());
+                goals.removeIf(gl -> gl.getUser().equals(user));
+                goalService.deleteMany(goals);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
         }
