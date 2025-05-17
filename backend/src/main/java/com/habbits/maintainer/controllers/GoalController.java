@@ -74,6 +74,11 @@ public class GoalController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
+    @GetMapping("/view")
+    public ResponseEntity<List<Goal>> show() {
+        return new ResponseEntity<>(goalService.getAll(), HttpStatus.OK);
+    }
+
     @PutMapping("/update/id/{id}")
     public ResponseEntity<Void> update(@PathVariable ObjectId id, @RequestBody Goal goal) {
         Goal old = goalService.findById(id);
@@ -82,6 +87,7 @@ public class GoalController {
             old.setUnit(goal.getUnit());
             old.setSteps(goal.getSteps());
             old.setUpdated_at(LocalDateTime.now());
+            goalService.replace(id, old);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);

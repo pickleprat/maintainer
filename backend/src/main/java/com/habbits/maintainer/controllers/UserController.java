@@ -138,8 +138,6 @@ public class UserController {
         for(User user: users) {
             if(user.getUserName().equals(userName)) {
                 userService.delete(user.getId());
-                goals.removeIf(gl -> gl.getUser().equals(user));
-                goalService.deleteMany(goals);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
         }
